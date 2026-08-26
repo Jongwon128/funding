@@ -5,23 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>인턴 동기 생일 펀딩</title>
     
-    <!-- 파이어베이스 SDK 불러오기 -->
+    <!-- 파이어베이스 SDK (CDN 방식) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
         import { getDatabase, ref, set, get, update, push, onValue, serverTimestamp, query, orderByChild, onChildAdded } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
 
-        // ==========================================
-        // [중요] 본인의 파이어베이스 설정값 입력 필요
+        // ★ 유저님의 실제 파이어베이스 설정값 적용 완료
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_DOMAIN.firebaseapp.com",
-            databaseURL: "YOUR_DATABASE_URL",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_BUCKET.appspot.com",
-            messagingSenderId: "SENDER_ID",
-            appId: "APP_ID"
+            apiKey: "AIzaSyD_uB-0QSvK-fDntuEzWUN035x1UYY79_c",
+            authDomain: "intern-funding.firebaseapp.com",
+            databaseURL: "https://intern-funding-default-rtdb.firebaseio.com",
+            projectId: "intern-funding",
+            storageBucket: "intern-funding.firebasestorage.app",
+            messagingSenderId: "253495572185",
+            appId: "1:253495572185:web:4c962343a8a85f978470c8",
+            measurementId: "G-M87DKLE5B4"
         };
-        // ==========================================
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
@@ -51,13 +50,12 @@
 
                 const newId = 'fund_' + Math.random().toString(36).substring(2, 8);
                 
-                // 파이어베이스에 새 펀딩 방 데이터 저장
                 await set(ref(db, 'rooms/' + newId), {
                     organizer: organizer,
                     targetName: name,
                     targetItem: item,
                     targetAmount: target,
-                    currentAmount: 0, // 초기 모금액 0원
+                    currentAmount: 0,
                     tossLink: toss,
                     adminPass: password
                 });
@@ -74,7 +72,6 @@
             viewMode.style.display = "block";
             const roomRef = ref(db, 'rooms/' + fundId);
 
-            // 실시간 데이터 동기화 (모금액, 목표 등)
             onValue(roomRef, (snapshot) => {
                 const data = snapshot.val();
                 if (!data) {
@@ -92,14 +89,12 @@
                 document.getElementById('vPercent').innerText = percent + "%";
                 document.getElementById('progressBar').style.width = percent + "%";
 
-                // 송금 버튼 링크 세팅
                 document.getElementById('fundBtn').onclick = () => {
                     if(data.tossLink) window.location.href = data.tossLink;
                     else alert("등록된 송금 링크가 없습니다.");
                 };
             });
 
-            // 실시간 방명록 불러오기
             const commentsRef = ref(db, 'comments/' + fundId);
             onChildAdded(query(commentsRef, orderByChild('timestamp')), (snapshot) => {
                 const c = snapshot.val();
@@ -110,7 +105,6 @@
                 list.prepend(div);
             });
 
-            // 방명록 작성 버튼
             document.getElementById('sendComment').addEventListener('click', () => {
                 const name = document.getElementById('cName').value.trim();
                 const text = document.getElementById('cText').value.trim();
@@ -123,7 +117,6 @@
                 document.getElementById('cText').value = "";
             });
 
-            // 관리자 모드 열기 (비밀번호 인증)
             document.getElementById('openAdmin').addEventListener('click', async () => {
                 const inputPass = prompt("관리자(주최자) 비밀번호를 입력하세요:");
                 if(!inputPass) return;
@@ -139,7 +132,6 @@
                 }
             });
 
-            // 모금액 추가 업데이트 버튼
             document.getElementById('updateAmtBtn').addEventListener('click', async () => {
                 const addMoney = parseInt(document.getElementById('addMoneyInput').value);
                 if(isNaN(addMoney)) return;
@@ -166,7 +158,6 @@
 </head>
 <body>
 
-    <!-- 1. 만들기 화면 -->
     <div id="createMode" class="card hidden">
         <h2>🎁 생일 펀딩 방 만들기</h2>
         <label>주최자 이름 (총무)</label>
@@ -190,13 +181,11 @@
         </div>
     </div>
 
-    <!-- 2. 펀딩 참여/보기 화면 -->
     <div id="viewMode" class="card hidden">
         <div style="font-size:12px; color:#888; margin-bottom:5px;">주최자: <span id="vOrganizer"></span></div>
         <h2 id="vTitle" style="margin-top:0;"></h2>
         <p>목표 선물: <strong id="vItem"></strong></p>
         
-        <!-- 게이지바 -->
         <div style="background:#eee; height:12px; border-radius:6px; overflow:hidden; margin:15px 0;">
             <div id="progressBar" style="background:#00c4c4; width:0%; height:100%; transition: 0.4s;"></div>
         </div>
@@ -207,10 +196,8 @@
 
         <button id="fundBtn" style="margin-top:15px; background:#3182ce; padding:15px; font-size:16px;">토스로 송금하러 가기 💸</button>
 
-        <!-- 관리자 버튼 (비밀번호 입력 후 오픈) -->
         <button id="openAdmin" style="background:#e2e8f0; color:#4a5568; font-size:12px; padding:8px; margin-top:5px;">⚙️ 주최자 모금액 업데이트 (관리자용)</button>
 
-        <!-- 관리자 패널 (비번 맞추면 나타남) -->
         <div id="adminPanel" class="hidden" style="background:#fffaf0; border:1px solid #feebc8; padding:12px; border-radius:6px; margin-top:10px;">
             <div style="font-size:12px; font-weight:bold; color:#c05621; margin-bottom:5px;">관리자 전용: 모금액 수동 추가</div>
             <input type="number" id="addMoneyInput" placeholder="추가할 금액 (예: 20000)">
