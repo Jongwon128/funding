@@ -82,7 +82,6 @@
         const firebaseConfig = {
             apiKey: "AIzaSyD_uB-0QSvK-fDntuEzWUN035x1UYY79_c",
             authDomain: "intern-funding.firebaseapp.com",
-            databaseURL: "https://intern-funding-default-rtdb.firebaseio.com",
             projectId: "intern-funding",
             storageBucket: "intern-funding.firebasestorage.app",
             messagingSenderId: "253495572185",
@@ -91,7 +90,8 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
+        // 🔥 URL을 이곳에 직접 넣어주는 방식으로 변경 완료!
+        const db = getDatabase(app, "https://intern-funding-default-rtdb.firebaseio.com");
 
         document.addEventListener("DOMContentLoaded", () => {
             const urlParams = new URLSearchParams(window.location.search);
