@@ -5,159 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>인턴 동기 생일 펀딩</title>
     
-    <!-- 파이어베이스 SDK (CDN 방식) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-        import { getDatabase, ref, set, get, update, push, onValue, serverTimestamp, query, orderByChild, onChildAdded } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
-
-        // ★ 유저님의 실제 파이어베이스 설정값 적용 완료
-        const firebaseConfig = {
-            apiKey: "AIzaSyD_uB-0QSvK-fDntuEzWUN035x1UYY79_c",
-            authDomain: "intern-funding.firebaseapp.com",
-            databaseURL: "https://intern-funding-default-rtdb.firebaseio.com",
-            projectId: "intern-funding",
-            storageBucket: "intern-funding.firebasestorage.app",
-            messagingSenderId: "253495572185",
-            appId: "1:253495572185:web:4c962343a8a85f978470c8",
-            measurementId: "G-M87DKLE5B4"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-
-        const urlParams = new URLSearchParams(window.location.search);
-        const fundId = urlParams.get('id');
-
-        const createMode = document.getElementById('createMode');
-        const viewMode = document.getElementById('viewMode');
-
-        if (!fundId) {
-            // [모드 1] 펀딩 만들기 화면
-            createMode.style.display = "block";
-
-            document.getElementById('makeBtn').addEventListener('click', async () => {
-                const organizer = document.getElementById('mOrganizer').value.trim();
-                const name = document.getElementById('mName').value.trim();
-                const item = document.getElementById('mItem').value.trim();
-                const target = parseInt(document.getElementById('mTarget').value);
-                const toss = document.getElementById('mToss').value.trim();
-                const password = document.getElementById('mPass').value.trim();
-
-                if(!organizer || !name || !item || !target || !password) {
-                    alert("모든 칸을 채워주세요!");
-                    return;
-                }
-
-                const newId = 'fund_' + Math.random().toString(36).substring(2, 8);
-                
-                await set(ref(db, 'rooms/' + newId), {
-                    organizer: organizer,
-                    targetName: name,
-                    targetItem: item,
-                    targetAmount: target,
-                    currentAmount: 0,
-                    tossLink: toss,
-                    adminPass: password
-                });
-
-                const currentUrl = window.location.href.split('?')[0];
-                const finalLink = currentUrl + "?id=" + newId;
-
-                document.getElementById('linkBox').style.display = "block";
-                document.getElementById('resultLink').value = finalLink;
-            });
-
-        } else {
-            // [모드 2] 펀딩 참여/보기 화면
-            viewMode.style.display = "block";
-            const roomRef = ref(db, 'rooms/' + fundId);
-
-            onValue(roomRef, (snapshot) => {
-                const data = snapshot.val();
-                if (!data) {
-                    alert("존재하지 않는 펀딩 방입니다!");
-                    return;
-                }
-
-                document.getElementById('vOrganizer').innerText = data.organizer;
-                document.getElementById('vTitle').innerText = `${data.targetName} 생일 선물 펀딩 🎁`;
-                document.getElementById('vItem').innerText = data.targetItem;
-                document.getElementById('vTargetAmt').innerText = data.targetAmount.toLocaleString();
-                document.getElementById('vCurrentAmt').innerText = data.currentAmount.toLocaleString();
-                
-                const percent = Math.min(Math.round((data.currentAmount / data.targetAmount) * 100), 100);
-                document.getElementById('vPercent').innerText = percent + "%";
-                document.getElementById('progressBar').style.width = percent + "%";
-
-                document.getElementById('fundBtn').onclick = () => {
-                    if(data.tossLink) window.location.href = data.tossLink;
-                    else alert("등록된 송금 링크가 없습니다.");
-                };
-            });
-
-            const commentsRef = ref(db, 'comments/' + fundId);
-            onChildAdded(query(commentsRef, orderByChild('timestamp')), (snapshot) => {
-                const c = snapshot.val();
-                const list = document.getElementById('commentsList');
-                const div = document.createElement('div');
-                div.style.cssText = "background:#fff; padding:12px; border-radius:8px; margin-bottom:8px; border:1px solid #eee;";
-                div.innerHTML = `<strong>${c.name}</strong>: ${c.text}`;
-                list.prepend(div);
-            });
-
-            document.getElementById('sendComment').addEventListener('click', () => {
-                const name = document.getElementById('cName').value.trim();
-                const text = document.getElementById('cText').value.trim();
-                if(!name || !text) return alert("이름과 내용을 입력해주세요.");
-
-                push(ref(db, 'comments/' + fundId), {
-                    name, text, timestamp: serverTimestamp()
-                });
-                document.getElementById('cName').value = "";
-                document.getElementById('cText').value = "";
-            });
-
-            document.getElementById('openAdmin').addEventListener('click', async () => {
-                const inputPass = prompt("관리자(주최자) 비밀번호를 입력하세요:");
-                if(!inputPass) return;
-
-                const snapshot = await get(roomRef);
-                const data = snapshot.val();
-
-                if(inputPass === data.adminPass) {
-                    document.getElementById('adminPanel').style.display = "block";
-                    alert("인증 성공! 모금액을 업데이트할 수 있습니다.");
-                } else {
-                    alert("비밀번호가 틀렸습니다!");
-                }
-            });
-
-            document.getElementById('updateAmtBtn').addEventListener('click', async () => {
-                const addMoney = parseInt(document.getElementById('addMoneyInput').value);
-                if(isNaN(addMoney)) return;
-
-                const snapshot = await get(roomRef);
-                const current = snapshot.val().currentAmount || 0;
-                const newTotal = current + addMoney;
-
-                await update(roomRef, { currentAmount: newTotal });
-                document.getElementById('addMoneyInput').value = "";
-                alert(`${addMoney.toLocaleString()}원이 반영되었습니다! 🎉`);
-            });
-        }
-    </script>
-
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f8f9fa; margin: 0; padding: 20px; color: #333; }
         .card { max-width: 480px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         input, button { width: 100%; padding: 12px; margin: 8px 0; box-sizing: border-box; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
         button { background: #00c4c4; color: white; border: none; font-weight: bold; cursor: pointer; }
         button:hover { background: #00b3b3; }
-        .hidden { display: none; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
+    <!-- 1. 만들기 화면 -->
     <div id="createMode" class="card hidden">
         <h2>🎁 생일 펀딩 방 만들기</h2>
         <label>주최자 이름 (총무)</label>
@@ -181,6 +40,7 @@
         </div>
     </div>
 
+    <!-- 2. 펀딩 참여/보기 화면 -->
     <div id="viewMode" class="card hidden">
         <div style="font-size:12px; color:#888; margin-bottom:5px;">주최자: <span id="vOrganizer"></span></div>
         <h2 id="vTitle" style="margin-top:0;"></h2>
@@ -214,5 +74,147 @@
         <div id="commentsList" style="margin-top:15px;"></div>
     </div>
 
+    <!-- 파이어베이스 로직 (DOM 로드 후 실행되도록 수정) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+        import { getDatabase, ref, set, get, update, push, onValue, serverTimestamp, query, orderByChild, onChildAdded } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD_uB-0QSvK-fDntuEzWUN035x1UYY79_c",
+            authDomain: "intern-funding.firebaseapp.com",
+            databaseURL: "https://intern-funding-default-rtdb.firebaseio.com",
+            projectId: "intern-funding",
+            storageBucket: "intern-funding.firebasestorage.app",
+            messagingSenderId: "253495572185",
+            appId: "1:253495572185:web:4c962343a8a85f978470c8",
+            measurementId: "G-M87DKLE5B4"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const fundId = urlParams.get('id');
+
+            const createMode = document.getElementById('createMode');
+            const viewMode = document.getElementById('viewMode');
+
+            if (!fundId) {
+                // [모드 1] 펀딩 만들기 화면 노출
+                createMode.classList.remove('hidden');
+
+                document.getElementById('makeBtn').addEventListener('click', async () => {
+                    const organizer = document.getElementById('mOrganizer').value.trim();
+                    const name = document.getElementById('mName').value.trim();
+                    const item = document.getElementById('mItem').value.trim();
+                    const target = parseInt(document.getElementById('mTarget').value);
+                    const toss = document.getElementById('mToss').value.trim();
+                    const password = document.getElementById('mPass').value.trim();
+
+                    if(!organizer || !name || !item || !target || !password) {
+                        alert("모든 칸을 채워주세요!");
+                        return;
+                    }
+
+                    const newId = 'fund_' + Math.random().toString(36).substring(2, 8);
+                    
+                    await set(ref(db, 'rooms/' + newId), {
+                        organizer: organizer,
+                        targetName: name,
+                        targetItem: item,
+                        targetAmount: target,
+                        currentAmount: 0,
+                        tossLink: toss,
+                        adminPass: password
+                    });
+
+                    const currentUrl = window.location.href.split('?')[0];
+                    const finalLink = currentUrl + "?id=" + newId;
+
+                    document.getElementById('linkBox').classList.remove('hidden');
+                    document.getElementById('resultLink').value = finalLink;
+                });
+
+            } else {
+                // [모드 2] 펀딩 참여/보기 화면 노출
+                viewMode.classList.remove('hidden');
+                const roomRef = ref(db, 'rooms/' + fundId);
+
+                onValue(roomRef, (snapshot) => {
+                    const data = snapshot.val();
+                    if (!data) {
+                        alert("존재하지 않는 펀딩 방입니다!");
+                        return;
+                    }
+
+                    document.getElementById('vOrganizer').innerText = data.organizer;
+                    document.getElementById('vTitle').innerText = `${data.targetName} 생일 선물 펀딩 🎁`;
+                    document.getElementById('vItem').innerText = data.targetItem;
+                    document.getElementById('vTargetAmt').innerText = data.targetAmount.toLocaleString();
+                    document.getElementById('vCurrentAmt').innerText = data.currentAmount.toLocaleString();
+                    
+                    const percent = Math.min(Math.round((data.currentAmount / data.targetAmount) * 100), 100);
+                    document.getElementById('vPercent').innerText = percent + "%";
+                    document.getElementById('progressBar').style.width = percent + "%";
+
+                    document.getElementById('fundBtn').onclick = () => {
+                        if(data.tossLink) window.location.href = data.tossLink;
+                        else alert("등록된 송금 링크가 없습니다.");
+                    };
+                });
+
+                const commentsRef = ref(db, 'comments/' + fundId);
+                onChildAdded(query(commentsRef, orderByChild('timestamp')), (snapshot) => {
+                    const c = snapshot.val();
+                    const list = document.getElementById('commentsList');
+                    const div = document.createElement('div');
+                    div.style.cssText = "background:#fff; padding:12px; border-radius:8px; margin-bottom:8px; border:1px solid #eee;";
+                    div.innerHTML = `<strong>${c.name}</strong>: ${c.text}`;
+                    list.prepend(div);
+                });
+
+                document.getElementById('sendComment').addEventListener('click', () => {
+                    const name = document.getElementById('cName').value.trim();
+                    const text = document.getElementById('cText').value.trim();
+                    if(!name || !text) return alert("이름과 내용을 입력해주세요.");
+
+                    push(ref(db, 'comments/' + fundId), {
+                        name, text, timestamp: serverTimestamp()
+                    });
+                    document.getElementById('cName').value = "";
+                    document.getElementById('cText').value = "";
+                });
+
+                document.getElementById('openAdmin').addEventListener('click', async () => {
+                    const inputPass = prompt("관리자(주최자) 비밀번호를 입력하세요:");
+                    if(!inputPass) return;
+
+                    const snapshot = await get(roomRef);
+                    const data = snapshot.val();
+
+                    if(inputPass === data.adminPass) {
+                        document.getElementById('adminPanel').classList.remove('hidden');
+                        alert("인증 성공! 모금액을 업데이트할 수 있습니다.");
+                    } else {
+                        alert("비밀번호가 틀렸습니다!");
+                    }
+                });
+
+                document.getElementById('updateAmtBtn').addEventListener('click', async () => {
+                    const addMoney = parseInt(document.getElementById('addMoneyInput').value);
+                    if(isNaN(addMoney)) return;
+
+                    const snapshot = await get(roomRef);
+                    const current = snapshot.val().currentAmount || 0;
+                    const newTotal = current + addMoney;
+
+                    await update(roomRef, { currentAmount: newTotal });
+                    document.getElementById('addMoneyInput').value = "";
+                    alert(`${addMoney.toLocaleString()}원이 반영되었습니다! 🎉`);
+                });
+            }
+        });
+    </script>
 </body>
 </html>
