@@ -16,7 +16,7 @@
 </head>
 <body>
 
-    <!-- 1. 만들기 화면 -->
+    <!-- 1. 펀딩 만들기 화면 -->
     <div id="createMode" class="card hidden">
         <h2>🎁 생일 펀딩 방 만들기</h2>
         <label>주최자 이름 (총무)</label>
@@ -74,7 +74,7 @@
         <div id="commentsList" style="margin-top:15px;"></div>
     </div>
 
-    <!-- 파이어베이스 로직 (DOM 로드 후 실행되도록 수정) -->
+    <!-- 파이어베이스 로직 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
         import { getDatabase, ref, set, get, update, push, onValue, serverTimestamp, query, orderByChild, onChildAdded } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
@@ -101,7 +101,7 @@
             const viewMode = document.getElementById('viewMode');
 
             if (!fundId) {
-                // [모드 1] 펀딩 만들기 화면 노출
+                // 만들기 화면 노출
                 createMode.classList.remove('hidden');
 
                 document.getElementById('makeBtn').addEventListener('click', async () => {
@@ -137,7 +137,7 @@
                 });
 
             } else {
-                // [모드 2] 펀딩 참여/보기 화면 노출
+                // 펀딩 참여/보기 화면 노출
                 viewMode.classList.remove('hidden');
                 const roomRef = ref(db, 'rooms/' + fundId);
 
