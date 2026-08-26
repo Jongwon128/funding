@@ -27,8 +27,8 @@
         <input type="text" id="mItem" placeholder="예: 에어팟 프로 2세대">
         <label>목표 금액 (숫자만)</label>
         <input type="number" id="mTarget" placeholder="300000">
-        <label>토스/카카오 송금 링크</label>
-        <input type="text" id="mToss" placeholder="https://toss.me/your_id">
+        <label>송금 정보 (계좌번호 또는 링크)</label>
+        <input type="text" id="mToss" placeholder="예: 카카오뱅크 3333-01-1234567">
         <label>관리자 비밀번호 (모금액 수정용)</label>
         <input type="password" id="mPass" placeholder="비밀번호 4자리 등">
         
@@ -54,7 +54,7 @@
             <span><span id="vCurrentAmt">0</span>원 / <span id="vTargetAmt">0</span>원</span>
         </div>
 
-        <button id="fundBtn" style="margin-top:15px; background:#3182ce; padding:15px; font-size:16px;">토스로 송금하러 가기 💸</button>
+        <button id="fundBtn" style="margin-top:15px; background:#3182ce; padding:15px; font-size:16px;">송금 정보 확인 및 계좌 복사 💸</button>
 
         <button id="openAdmin" style="background:#e2e8f0; color:#4a5568; font-size:12px; padding:8px; margin-top:5px;">⚙️ 주최자 모금액 업데이트 (관리자용)</button>
 
@@ -90,7 +90,6 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        // 🔥 URL을 이곳에 직접 넣어주는 방식으로 변경 완료!
         const db = getDatabase(app, "https://intern-funding-default-rtdb.firebaseio.com");
 
         document.addEventListener("DOMContentLoaded", () => {
@@ -101,7 +100,6 @@
             const viewMode = document.getElementById('viewMode');
 
             if (!fundId) {
-                // 만들기 화면 노출
                 createMode.classList.remove('hidden');
 
                 document.getElementById('makeBtn').addEventListener('click', async () => {
@@ -137,7 +135,6 @@
                 });
 
             } else {
-                // 펀딩 참여/보기 화면 노출
                 viewMode.classList.remove('hidden');
                 const roomRef = ref(db, 'rooms/' + fundId);
 
@@ -158,9 +155,25 @@
                     document.getElementById('vPercent').innerText = percent + "%";
                     document.getElementById('progressBar').style.width = percent + "%";
 
-                    document.getElementById('fundBtn').onclick = () => {
-                        if(data.tossLink) window.location.href = data.tossLink;
-                        else alert("등록된 송금 링크가 없습니다.");
+                    // 🔥 스마트 버튼 로직: 링크면 이동, 계좌번호면 자동 복사!
+                    const fundBtn = document.getElementById('fundBtn');
+                    fundBtn.innerText = `송금 정보 복사하기 (${data.tossLink})`;
+                    
+                    fundBtn.onclick = () => {
+                        if(!data.tossLink) {
+                            alert("등록된 송금 정보가 없습니다.");
+                            return;
+                        }
+
+                        if(data.tossLink.startsWith('http')) {
+                            window.location.href = data.tossLink;
+                        } else {
+                            navigator.clipboard.writeText(data.tossLink).then(() => {
+                                alert(`📋 계좌번호가 복사되었습니다!\n(${data.tossLink})\n\n토스나 은행 앱에 붙여넣기 하세요!`);
+                            }).catch(() => {
+                                alert(`송금 정보: ${data.tossLink}`);
+                            });
+                        }
                     };
                 });
 
